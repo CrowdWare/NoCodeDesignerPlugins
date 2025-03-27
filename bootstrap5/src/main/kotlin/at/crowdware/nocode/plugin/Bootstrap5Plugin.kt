@@ -38,6 +38,9 @@ override fun export(app: App, pages: List<Page>, outputDir: File): ExportStatus 
                         append("<p>" + element.text + "</p>\n")
                     }
                     else -> {
+                        // this is just a sample plugin implementation
+                        // normaly we at CrowdWare want to get rid of HTML in general
+                        // so help yourself and extend this plugin if you really need HTML
                         println("Unknown element: $element")
                     }
                 }
