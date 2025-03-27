@@ -2,9 +2,9 @@
 
 set -e
 
-PLUGIN_ID="bootstrap5"
-JAR_NAME="bootstrap5-plugin-1.0.0.jar"
-ZIP_NAME="${PLUGIN_ID}-plugin.zip"
+PLUGIN_ID="bootstrap5-plugin"
+JAR_NAME="${PLUGIN_ID}-1.0.0.jar"
+ZIP_NAME="${PLUGIN_ID}.zip"
 
 echo "▶️  Bauen des Plugins..."
 ./gradlew clean pluginJar
@@ -20,4 +20,5 @@ zip -r $ZIP_NAME \
 
 echo "✅ Plugin-Paket erstellt: $ZIP_NAME"
 
-cp -f bootstrap5-plugin.zip ../../NoCodeDesigner/composeApp/plugins
+echo "▶️  Copy ${ZIP_NAME} to Plugins dir..."
+cp -f ${ZIP_NAME} ../../NoCodeDesigner/composeApp/plugins
