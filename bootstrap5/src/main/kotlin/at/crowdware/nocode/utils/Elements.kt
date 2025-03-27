@@ -118,11 +118,11 @@
      var scrollable: String,
      val elements: MutableList<UIElement>)
  
- sealed class UIElement {
+sealed class UIElement {
      data object Zero : UIElement()
  
      data class Course(
-         var topics: MutableList<Topic> = mutableListOf()
+        var topics: MutableList<Topic> = mutableListOf()
      ) : UIElement()
  
      data class Topic(
@@ -132,27 +132,19 @@
      ) : UIElement()
  
      data class Subtopic(
-         val label: String,
-         val id: String? = null,
+        val label: String,
+        val id: String? = null,
      ) : UIElement()
  
       data class TextElement(
-   
         val text: String,
- 
-         val color: String,
- 
-         val fontSize: TextUnit,
- 
-         val weight: Int,
- 
-         val width: Int,
- 
-         val height: Int,
- 
-         val fontWeight: FontWeight,
- 
-         val textAlign: TextAlign
+        val color: String,
+        val fontSize: TextUnit,
+        val weight: Int,
+        val width: Int,
+        val height: Int,
+        val fontWeight: FontWeight,
+        val textAlign: TextAlign
      ) : UIElement()
  
      data class ButtonElement(

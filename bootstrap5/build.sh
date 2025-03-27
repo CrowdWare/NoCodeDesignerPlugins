@@ -19,3 +19,5 @@ zip -r $ZIP_NAME \
   build/libs/$JAR_NAME
 
 echo "✅ Plugin-Paket erstellt: $ZIP_NAME"
+
+cp -f bootstrap5-plugin.zip ../../NoCodeDesigner/composeApp/plugins
