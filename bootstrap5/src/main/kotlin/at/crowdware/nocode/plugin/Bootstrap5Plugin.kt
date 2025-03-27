@@ -20,7 +20,7 @@ override fun export(app: App, pages: List<Page>, outputDir: File): ExportStatus 
         val outputFile = File(outputDir, "${page.title}.html")
         val content = buildString {
             append("<!doctype html>\n")
-            append("<html lang=\"$page.language\">\n")
+            append("<html lang=\"${page.language}\">\n")
             append("<head>\n")
             append("<meta charset=\"utf-8\">\n")
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
