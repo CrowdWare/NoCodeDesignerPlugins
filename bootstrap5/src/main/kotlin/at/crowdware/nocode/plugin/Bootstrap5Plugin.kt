@@ -19,7 +19,15 @@ override fun export(app: App, pages: List<Page>, outputDir: File): ExportStatus 
     for (page in pages) {
         val outputFile = File(outputDir, "${page.title}.html")
         val content = buildString {
-            append("<html>\n<head>\n<title>${page.title}</title>\n</head>\n<body>\n")
+            append("<!doctype html>\n")
+            append("<html lang=\"$page.language\">\n")
+            append("<head>\n")
+            append("<meta charset=\"utf-8\">\n")
+            append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+            append("<title>${page.title}</title>\n")
+            append("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH\" crossorigin=\"anonymous\">\n")
+            append("</head>\n")
+            append("<body>\n")
             append("<h1>Hello from ${page.title}</h1>\n")
             for (element in page.elements) {
                 when (element) {
@@ -34,7 +42,9 @@ override fun export(app: App, pages: List<Page>, outputDir: File): ExportStatus 
                     }
                 }
             }
-            append("</body></html>")
+            append("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz\" crossorigin=\"anonymous\"></script>\n")
+            append("</body>\n")
+            append("</html>\n")
         }
         outputFile.writeText(content)
         outputFiles.add(outputFile)

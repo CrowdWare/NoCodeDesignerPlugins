@@ -111,6 +111,7 @@
  )
  
  data class Page(
+    var language: String,
      var title: String,
      var color: String,
      var backgroundColor: String,
