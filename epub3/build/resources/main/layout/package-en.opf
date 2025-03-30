@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:identifier id="uid">{{ uuid }}</dc:identifier>
+      <dc:title>{{ title }}</dc:title>
+      <dc:creator>{{ creator }}</dc:creator>
+      <dc:language>{{ lang }}</dc:language>
+      <meta name="generator" content="{{ generator }}"/>
+      <meta property="dcterms:modified">{{ date }}</meta>
+      <meta property="dcterms:creator">{{ creator }}</meta>
+      <meta property="dcterms:rights">{{ license }}</meta>
+      <meta name="cover" content="cover"/>
+   </metadata>
+   <manifest>
+      <item href="parts/toc.xhtml" id="nav" media-type="application/xhtml+xml" properties="nav"/>{{#items}}
+      <item href="{{ href }}" id="{{ id }}" media-type="{{ type }}"/>{{/items}}
+      <item href="css/pastie.css" media-type="text/css" id="hilite"/>
+      <item href="css/stylesheet.css" media-type="text/css" id="css"/>
+      <item id="cover" href="images/cover-en.png" media-type="image/jpg"/>
+   </manifest>
+   <spine>
+      <itemref idref="nav"/>{{#spine}}
+      <itemref idref="{{ . }}"/>{{/spine}}
+   </spine>
+</package>
+
