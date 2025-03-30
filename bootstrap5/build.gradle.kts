@@ -23,6 +23,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
+    implementation("com.github.h0tk3y.betterParse:better-parse:0.4.4")
 }
 
 tasks.register<Jar>("pluginJar") {

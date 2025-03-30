@@ -20,6 +20,7 @@
 package at.crowdware.nocode.plugin
 
 
+import at.crowdware.nocode.utils.PartElement
 import at.crowdware.nocode.utils.SmlNode
 import at.crowdware.nocode.utils.getStringValue
 import at.crowdware.nocode.utils.parseSML
@@ -69,7 +70,7 @@ class Epub3Plugin : SmlExportPlugin {
             writeContainer(tempDir)
             writeMimetype(tempDir)
             generatePackage(tempDir, parsedApp, source, guid, lang, generator)
-            val (toc, partsCount) = generateParts(tempDir, source, lang = lang)
+            val (toc, partsCount) = generateParts(tempDir, parsedApp, source, lang = lang)
             if (partsCount > 0) {
                 generateToc(tempDir, parsedApp, toc, lang, generator)
 
@@ -223,17 +224,35 @@ class Epub3Plugin : SmlExportPlugin {
         File(outputPath.toUri()).writeText(renderedXml, Charsets.UTF_8)
     }
 
-    fun generateParts(dir: File, source: String, lang: String): Pair<List<Map<String, Any>>, Int> {
+    fun generateParts(dir: File, parsedApp: SmlNode, source: String, lang: String): Pair<List<Map<String, Any>>, Int> {
         var partsCount = 0
         val toc = mutableListOf<Map<String, Any>>()
+        val titel = when (lang) {
+            "de" -> "Inhaltsverzeichnis"
+            "pt" -> "Índice"
+            "fr" -> "Table des matières"
+            "eo" -> "Enhavo"
+            "es" -> "Índice"
+            else -> "Table of Contents"
+        }
         val item = mutableMapOf<String, Any>(
             "href" to "toc.xhtml",
-            "name" to if (lang == "de") "Inhaltsverzeichnis" else "Table of Contents",  // TODO: more languages to support
+            "name" to titel,
             "id" to "nav",
             "parts" to mutableListOf<Any>()
         )
+
         toc.add(item)
 
+        val parts = mutableListOf<PartElement>()
+        parsedApp.children.forEach { node ->
+            when(node.name) {
+                "Part" -> {
+                    parts.add(PartElement(src = node.name))
+                }
+            }
+        }
+        // TODO use Parts for ordering
         val partDir = File(source, "parts-$lang")
         partDir.walkTopDown().forEach { file ->
             if (file.isFile) {
