@@ -54,7 +54,7 @@ class Epub3Plugin : SmlExportPlugin {
         val appFile = File(source, "app.sml")
         val appSml = appFile.readText()
         val (parsedApp, _) = parseSML(appSml)
-        val title = getStringValue(parsedApp!!, "title", "defaultTitle")
+        val title = getStringValue(parsedApp!!, "name", "defaultTitle")
         val languages = listOf("de", "en", "pt", "fr", "eo", "es")
         for (lang in languages) {
             val tempDir = createTempDirectory().toFile()
@@ -69,10 +69,10 @@ class Epub3Plugin : SmlExportPlugin {
             copyImages(tempDir, source)
             writeContainer(tempDir)
             writeMimetype(tempDir)
-            generatePackage(tempDir, parsedApp, source, guid, lang, generator)
-            val (toc, partsCount) = generateParts(tempDir, parsedApp, source, lang = lang)
+            generatePackage(tempDir, node = parsedApp, source, guid, lang, generator)
+            val (parts, partsCount) = generateParts(tempDir, parsedApp, source, lang = lang)
             if (partsCount > 0) {
-                generateToc(tempDir, parsedApp, toc, lang, generator)
+                generateToc(dir = tempDir, node = parsedApp, parts =  parts, lang= lang, generator = generator)
 
                 val files = getAllFiles(tempDir)
                 val out = "$outputDir/$title-$lang.epub"
@@ -162,7 +162,7 @@ class Epub3Plugin : SmlExportPlugin {
 
         context["uuid"] = guid
         context["lang"] = lang
-        context["title"] = getStringValue(node, "title", "defaultVersion")
+        context["title"] = getStringValue(node, "name", "defaultTitle")
         context["date"] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"))
         context["version"] = getStringValue(node, "version", "defaultVersion")
         context["creator"] = getStringValue(node, "creator", "defaultCreator")
@@ -175,18 +175,24 @@ class Epub3Plugin : SmlExportPlugin {
 
         val items = mutableListOf<Map<String, String>>()
         val spine = mutableListOf<String>()
+        val partsDir = File(source, "parts-$lang")
+        node.children.forEach { node ->
+            when (node.name) {
+                "Part" -> {
+                    val src = getStringValue(node, "src", "")
 
-        val partDir = File(source, "parts-$lang")
-        partDir.walkTopDown().forEach { file ->
-            if (file.isFile) {
-                val name = file.name.substringBefore(".").replace(" ", "-").lowercase()
-                if (name != "toc") {
-                    val item = mutableMapOf<String, String>()
-                    item["href"] = "parts/$name.xhtml"
-                    item["id"] = name
-                    item["type"] = "application/xhtml+xml"
-                    items.add(item)
-                    spine.add(name)
+                    val file = File(partsDir, src)
+                    if (file.isFile) {
+                        val name = file.name.substringBefore(".").replace(" ", "-").lowercase()
+                        if (name != "toc") {
+                            val item = mutableMapOf<String, String>()
+                            item["href"] = "parts/$name.xhtml"
+                            item["id"] = name
+                            item["type"] = "application/xhtml+xml"
+                            items.add(item)
+                            spine.add(name)
+                        }
+                    }
                 }
             }
         }
@@ -248,20 +254,20 @@ class Epub3Plugin : SmlExportPlugin {
         parsedApp.children.forEach { node ->
             when(node.name) {
                 "Part" -> {
-                    parts.add(PartElement(src = node.name))
+                    parts.add(PartElement(src = getStringValue(node, "src", "")))
                 }
             }
         }
         // TODO use Parts for ordering
         val partDir = File(source, "parts-$lang")
-        partDir.walkTopDown().forEach { file ->
-            if (file.isFile) {
+        for (part in parts) {
+            val file = File(partDir, part.src)
+            if (file.exists()) {
+                println("gen part: ${file.name}")
                 partsCount ++
-                println("generate part: ${file.absolutePath}")
                 val context = mutableMapOf<String, Any>()
                 val text = file.readText(Charsets.UTF_8)
                 val name = file.name.substringBefore(".").replace(" ", "-").lowercase()
-
                 if (name != "toc") {
                     val options = MutableDataSet()
                     options.set(HtmlRenderer.GENERATE_HEADER_ID, true)
@@ -280,21 +286,19 @@ class Epub3Plugin : SmlExportPlugin {
 
                     context["content"] = html
 
-                    val classLoader = Thread.currentThread().contextClassLoader
                     val resourcePath = "layout/template.xhtml"
-                    println("resPath: $resourcePath")
                     val inputStream = javaClass.classLoader.getResourceAsStream(resourcePath)
                         ?: throw IllegalArgumentException("Resource not found: $resourcePath")
 
                     val templateData = inputStream.bufferedReader().use { it.readText() }
-                        ?: throw IllegalArgumentException("File not found: $resourcePath")
-
                     val template = Template.parse(templateData)
                     val xhtml = template.processToString(context)
 
                     val outputFile = Paths.get(dir.path, "EPUB", "parts", "$name.xhtml").toFile()
                     outputFile.writeText(xhtml, Charsets.UTF_8)
                 }
+            } else {
+                println("file ${file.name} does not exist")
             }
         }
         return Pair(toc, partsCount)
@@ -368,7 +372,7 @@ class Epub3Plugin : SmlExportPlugin {
         val context = mutableMapOf<String, Any>()
 
         context["lang"] = lang
-        context["title"] = getStringValue(node, "title", "defaultTitle")
+        context["title"] = getStringValue(node, "name", "defaultTitle")
         context["date"] = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"))
         context["version"] = getStringValue(node, "version", "defaultVersion")
         context["creator"] = getStringValue(node, "creator", "defaultCreator")
@@ -461,9 +465,16 @@ class Epub3Plugin : SmlExportPlugin {
             else -> "Table of Contents"
         }
 
-        if (parts.size > 0)
+        if (parts.size > 0) {
+            /*
+            parts.forEachIndexed { index, map ->
+                println("Part #$index:")
+                map.forEach { (key, value) ->
+                    println("  $key = $value")
+                }
+            }*/
             context["parts"] = parts
-
+        }
         val resourcePath = "layout/toc.xhtml"
         val inputStream = javaClass.classLoader.getResourceAsStream(resourcePath)
             ?: throw IllegalArgumentException("Resource not found: $resourcePath")
