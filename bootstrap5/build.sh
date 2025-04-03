@@ -21,4 +21,4 @@ zip -r $ZIP_NAME \
 echo "✅ Plugin-Paket erstellt: $ZIP_NAME"
 
 echo "▶️  Copy ${ZIP_NAME} to Plugins dir..."
-cp -f ${ZIP_NAME} ../../NoCodeDesigner/composeApp/plugins
+cp -f "${ZIP_NAME}" "/Users/art/Library/Application Support/NoCodeDesigner/plugins"
