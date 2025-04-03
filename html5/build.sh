@@ -2,7 +2,7 @@
 
 set -e
 
-PLUGIN_ID="epub3-plugin"
+PLUGIN_ID="html5-plugin"
 JAR_NAME="${PLUGIN_ID}-1.0.0.jar"
 ZIP_NAME="${PLUGIN_ID}.zip"
 

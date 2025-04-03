@@ -28,7 +28,7 @@ dependencies {
 }
 
 tasks.register<Jar>("pluginJar") {
-    archiveBaseName.set("bootstrap5-plugin")
+    archiveBaseName.set("html5-plugin")
     archiveVersion.set(project.version.toString())
     from(sourceSets.main.get().output)
     manifest {

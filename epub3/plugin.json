@@ -1,8 +1,0 @@
-{
-  "id": "epub3-plugin",
-  "label": "EPUB 3 Generator",
-  "version": "1.0.0",
-  "entry": "build/libs/epub3-plugin-1.0.0.jar",
-  "mainClass": "at.crowdware.nocode.plugin.Epub3Plugin",
-  "icon": "icon.svg"
-}

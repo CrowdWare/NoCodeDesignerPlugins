@@ -13,8 +13,8 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
 class Bootstrap5Plugin : SmlExportPlugin {
-    override val id = "bootstrap5-plugin"
-    override val label = "Bootstrap 5 Generator"
+    override val id = "html5-plugin"
+    override val label = "HTML5 Generator"
     override val icon = "icon.svg"
 
     override fun export(source: String, outputDir: File): ExportStatus {
@@ -49,7 +49,7 @@ class Bootstrap5Plugin : SmlExportPlugin {
             }
         }
         copyImages(source, outputDir)
-        createAssets(source, outputDir)
+        createAssets(outputDir)
         return ExportStatus(true, "Generated HTML", outputFiles)
     }
 }
@@ -68,7 +68,7 @@ fun copyImages(source: String, outputDir: File) {
     }
 }
 
-fun createAssets(source: String, outputDir: File) {
+fun createAssets(outputDir: File) {
     val css = """
     .row {
         display: flex;
@@ -127,8 +127,8 @@ fun renderElements(node: SmlNode, content: StringBuilder, source: String, lang: 
                 if (part.isNotEmpty()) {
                     val file = File(source, "parts-$lang/$part")
                     try {
-                        val text = file.readText(Charsets.UTF_8)
-                        val md = renderMarkdown(text)
+                        val txt = file.readText(Charsets.UTF_8)
+                        val md = renderMarkdown(txt)
                         content.append("<p>$md</p>\n")
                     } catch(e: Exception) {
                         println("An error occured: ${e.message}")
@@ -175,7 +175,7 @@ fun resolveLink(link: String, lang: String): String {
         link.startsWith("web:") -> {
             val url = link.removePrefix("web:")
             // optional: https:// entfernen für Anzeige
-            val displayUrl = url.removePrefix("https://").removePrefix("http://")
+            url.removePrefix("https://").removePrefix("http://")
             url
         }
         else -> link

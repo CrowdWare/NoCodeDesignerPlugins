@@ -1,5 +1,5 @@
-# EPUB3 Plugin for NoCodeDesigner
-Create ebook in EPUB3 format from Markdown.
+# HTML5 Plugin for NoCodeDesigner
+Create HTML5 from SML.
 
 ## build jar
 ```bash

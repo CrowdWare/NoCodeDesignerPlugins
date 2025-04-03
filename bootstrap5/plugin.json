@@ -1,8 +1,0 @@
-{
-  "id": "bootstrap5-plugin",
-  "label": "Bootstrap 5 Generator",
-  "version": "1.0.0",
-  "entry": "build/libs/bootstrap5-plugin-1.0.0.jar",
-  "mainClass": "at.crowdware.nocode.plugin.Bootstrap5Plugin",
-  "icon": "icon.svg"
-}
