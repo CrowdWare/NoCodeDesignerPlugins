@@ -1,4 +1,4 @@
-rootProject.name = "bootstrap5-plugin"
+rootProject.name = "html5-plugin"
 
 pluginManagement {
     repositories {

@@ -12,7 +12,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-class Bootstrap5Plugin : SmlExportPlugin {
+class HTML5Plugin : SmlExportPlugin {
     override val id = "html5-plugin"
     override val label = "HTML5 Generator"
     override val icon = "icon.svg"

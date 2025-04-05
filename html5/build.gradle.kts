@@ -33,7 +33,7 @@ tasks.register<Jar>("pluginJar") {
     from(sourceSets.main.get().output)
     manifest {
         attributes(
-            "Plugin-Class" to "at.crowdware.nocode.plugins.Bootstrap5Plugin"
+            "Plugin-Class" to "at.crowdware.nocode.plugins.Html5Plugin"
         )
     }
 }
