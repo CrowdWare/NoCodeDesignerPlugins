@@ -1,0 +1,8 @@
+{
+  "id": "apk-plugin",
+  "label": "APK Generator",
+  "version": "1.0.0",
+  "entry": "build/libs/apk-plugin-1.0.0.jar",
+  "mainClass": "at.crowdware.nocode.plugin.APKPlugin",
+  "icon": "icon.svg"
+}
