@@ -21,29 +21,27 @@ class APKPlugin : SmlExportPlugin {
     override val label = "APK Generator"
     override val icon = "icon.svg"
 
-
-// TODO: ein APK pro Sprache
-//      lang auch in der AppId einbauen
     override fun export(source: String, outputDir: File): ExportStatus {
         val outputFiles = mutableListOf<File>()
-
         val appFile = File(source, "app.sml")
         val appSml = appFile.readText()
         val (parsedApp, _) = parseSML(appSml)
         if (parsedApp != null) {
-            val name = getStringValue(parsedApp, "name", "")
-            val outputFolder = File(outputDir, "apk-plugin/$name")
-            outputFolder.mkdirs()
-            copyTemplate(outputFolder)
-            copySources(File(source, "app.sml"), outputFolder)
-            copySources(File(source, "images"), outputFolder)
-            copySources(File(source, "pages"), outputFolder)
-            copySources(File(source, "parts"), outputFolder)
-            copySources(File(source, "translations"), outputFolder)
-            changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder)
-
-            setLanguage(outputFolder, "en")
-            setPrecashed(outputFolder)
+            val langs = getLanguages(source).orEmpty()
+            for (lang in langs) {
+                val name = getStringValue(parsedApp, "name", "")
+                val outputFolder = File(outputDir, "apk-plugin/$name-$lang")
+                outputFolder.mkdirs()
+                copyTemplate(outputFolder)
+                copySources(File(source, "app.sml"), outputFolder)
+                copySources(File(source, "images"), outputFolder)
+                copySources(File(source, "pages"), outputFolder)
+                copySources(File(source, "parts"), outputFolder)
+                copySources(File(source, "translations"), outputFolder)
+                changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder, lang)
+                setLanguage(outputFolder, lang)
+                setPrecashed(outputFolder)
+            }
         }
         return ExportStatus(true, "Generated APK", outputFiles)
     }
@@ -105,15 +103,15 @@ fun reverseUrl(url: String): String {
     return url.split(".").reversed().joinToString(".")
 }
 
-fun changeAppId(id: String, name: String, outputFolder: File) {
+fun changeAppId(id: String, name: String, outputFolder: File, lang: String) {
     val mainActivity = File(outputFolder, "app/src/main/java/at/crowdware/freebookreader/MainActivity.kt")
-    exchangePlaceholders(mainActivity , "https://crowdware.github.io/FreeBookReader/app.sml", "https://" +  reverseUrl(id) + "/app.sml")
+    exchangePlaceholders(mainActivity , "https://crowdware.github.io/FreeBookReader/app.sml", "https://" + reverseUrl(id) + lang + "/app.sml")
 
     val baseComposeActivity = File(outputFolder, "nocodelibmobile/src/main/java/at/crowdware/nocodelibmobile/BaseComposeActivity.kt")
-    exchangePlaceholders(baseComposeActivity , "ContentCache/crowdware_github_io/NoCode", "ContentCache/" + reverseUrl(id).replace(".", "_"))
+    exchangePlaceholders(baseComposeActivity , "ContentCache/crowdware_github_io/NoCode", "ContentCache/" + reverseUrl(id).replace(".", "_") + lang)
 
     val build = File(outputFolder, "app/build.gradle.kts")
-    exchangePlaceholders(build , "applicationId = \"at.crowdware.freebookreader\"", "applicationId = \"" + id + "\"")
+    exchangePlaceholders(build , "applicationId = \"at.crowdware.freebookreader\"", "applicationId = \"" + id + lang + "\"")
 
     val manifest = File(outputFolder, "app/src/main/AndroidManifest.xml")
     exchangePlaceholders(manifest , "android:label=\"FreeBookReader\"", "android:label=\"" + name + "\"")
@@ -151,4 +149,30 @@ fun insertAfter(file: File, searchFor: String, insertValue: String) {
     }
 
     file.writeText(newContent)
+}
+
+
+fun getLanguages(source: String): List<String> {
+    val languages = mutableSetOf<String>()
+
+    val regex = Regex("-(.+)\\.(sml|md)")
+
+    val dirsAndExtensions = listOf(
+        "translations" to "sml",
+        "parts" to "md"
+    )
+
+    for ((dirName, expectedExtension) in dirsAndExtensions) {
+        val dir = File(source, dirName)
+        if (dir.exists() && dir.isDirectory) {
+            dir.listFiles()
+                ?.filter { it.isFile && it.name.contains("-") && it.name.endsWith(".$expectedExtension") }
+                ?.forEach { file ->
+                    regex.find(file.name)?.groupValues?.get(1)?.let { lang ->
+                        languages.add(lang)
+                    }
+                }
+        }
+    }
+    return languages.sorted()
 }
