@@ -41,10 +41,24 @@ class APKPlugin : SmlExportPlugin {
                 changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder, lang)
                 setLanguage(outputFolder, lang)
                 setPrecashed(outputFolder)
+                // TODO, Ausgabe im Client nötig, weils länger dauert 
+                //runGradleBuild(outputFolder)
             }
         }
         return ExportStatus(true, "Generated APK", outputFiles)
     }
+}
+
+fun runGradleBuild(projectDir: File): Int {
+    val gradlew = File(projectDir, "gradlew")
+    if (!gradlew.exists()) throw IllegalArgumentException("gradlew not found in ${projectDir.absolutePath}")
+
+    val process = ProcessBuilder(gradlew.absolutePath, "assembleRelease")
+        .directory(projectDir)
+        .inheritIO() // leitet stdout/stderr direkt durch
+        .start()
+
+    return process.waitFor() // Rückgabecode (0 = OK)
 }
 
 fun copyTemplate(outputDir: File) {
