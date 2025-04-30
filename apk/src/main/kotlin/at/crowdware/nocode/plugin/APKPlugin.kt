@@ -1,5 +1,13 @@
 package at.crowdware.nocode.plugin
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import at.crowdware.nocode.utils.SmlNode
 import at.crowdware.nocode.utils.getIntValue
 import at.crowdware.nocode.utils.getStringValue
@@ -24,35 +32,12 @@ class APKPlugin : SmlExportPlugin {
             val outputFolder = File(outputDir, "apk-plugin/$name")
             outputFolder.mkdirs()
             copyTemplate(outputFolder)
-            copyImages(source, outputFolder)
-
-            val languages = listOf("de", "en", "pt", "fr", "eo", "es")
-            for (lang in languages) {
-                val partDir = File(source, "pages-$lang")
-                partDir.walkTopDown().forEach { file ->
-                    if (file.isFile) {
-                        println("Rendering: ${file.absoluteFile}")
-                        val pageSml = file.readText()
-                        val (parsedPage, _) = parseSML(pageSml)
-                        val title = getStringValue(parsedPage!!, "title", "")
-                        val fileName = file.name.substringBefore(".")
-                        val outputFile = File(outputFolder, "/app/src/main/java/at/crowdware/nocodeapp/ui/$fileName-$lang.kt")
-                        val content = StringBuilder()
-                        content.append("package at.crowdware.nocodeapp.ui\n")
-                        content.append("\n")
-                        content.append("import androidx.compose.material3.Text\n")
-                        content.append("\n")
-                        content.append("\n")
-                        content.append("@Composable\n")
-                        content.append("fun " + fileName + lang + " {\n")
-                        renderElements(parsedPage, content, source, lang, 1)
-                        content.append("}\n")
-
-                        outputFile.writeText(content.toString())
-                        outputFiles.add(outputFile)
-                    }
-                }
-            }
+            copySources(File(source, "app.sml"), outputFolder)
+            copySources(File(source, "images"), outputFolder)
+            copySources(File(source, "pages"), outputFolder)
+            copySources(File(source, "parts"), outputFolder)
+            copySources(File(source, "translations"), outputFolder)
+            changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder)
         }
         return ExportStatus(true, "Generated APK", outputFiles)
     }
@@ -89,82 +74,49 @@ fun copyTemplate(outputDir: File) {
     }
 }
 
-fun copyImages(source: String, outputDir: File) {
-    val sourceDir = File(source, "images")
-    val targetDir = File(outputDir,"assets/images")
-    if (!targetDir.exists()) {
-        targetDir.mkdirs()
+fun copySources(source: File, outputDir: File) {
+    val baseTargetDir = File(outputDir, "app/src/main/assets")
+    if (!baseTargetDir.exists()) {
+        baseTargetDir.mkdirs()
     }
-    sourceDir.walkTopDown().forEach { file ->
-        if (file.isFile) {
-            val targetFile = File(targetDir, file.name)
-            Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    if (source.isDirectory) {
+        val targetDir = File(baseTargetDir, source.name)
+        source.walkTopDown().forEach { file ->
+            if (file.isFile) {
+                val relativePath = file.relativeTo(source).path
+                val targetFile = File(targetDir, relativePath)
+                targetFile.parentFile?.mkdirs()
+                Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
         }
+    } else if (source.isFile) {
+        val targetFile = File(baseTargetDir, source.name)
+        Files.copy(source.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
 }
 
-fun renderElements(node: SmlNode, content: StringBuilder, source: String, lang: String, tabs: Int) {
-    for (child in node.children) {
-        when (child.name) {
-            "Text" -> {
-                val text = getStringValue(child, "text", "")
-                if (text.isNotEmpty()) {
-                    content.append("\t".repeat(tabs))
-                    content.append("Text(text = \"$text\")\n")
-                }
-            }
-            /* 
-            "Markdown" -> {
-                val text = getStringValue(child, "text", "")
-                if (text.isNotEmpty()) {
-                    val md = renderMarkdown(text)
-                    content.append("<p>$md</p>\n")
-                }
-                val part = getStringValue(child, "part", "")
-                if (part.isNotEmpty()) {
-                    val file = File(source, "parts-$lang/$part")
-                    try {
-                        val txt = file.readText(Charsets.UTF_8)
-                        val md = renderMarkdown(txt)
-                        content.append("<p>$md</p>\n")
-                    } catch(e: Exception) {
-                        println("An error occured: ${e.message}")
-                    }
-                }
-            }
-            
-            "Image" -> {
-                val src = getStringValue(child, "src", "")
-                content.append("<img src=\"assets/images/$src\">\n")
-            }
-            "Button" -> {
-                val label = getStringValue(child, "label", "")
-                val link = getStringValue(child, "link", "")
-                val href = resolveLink(link, lang)
-                content.append("<a href=\"$href\" style=\"flex: 1;\"><button class=\"fullwidth-button\">$label</button></a>\n")
-            }*/
-            "Row" -> {
-                content.append("\t".repeat(tabs))
-                content.append("Row() {\n")
-                renderElements(child, content, source, lang, tabs + 1)
-                content.append("\t".repeat(tabs))
-                content.append("}\n")
-            }
-            "Column" -> {
-                content.append("\t".repeat(tabs))
-                content.append("Column() {\n")
-                renderElements(child, content, source, lang, tabs + 1)
-                content.append("\t".repeat(tabs))
-                content.append("}\n")
-            }
-            /*
-            "Spacer" -> {
-                val amount = getIntValue(child, "amount", 0)
-                content.append("<div style=\"width:${amount}px; height:${amount}px;\"></div>\n")
-            }*/
-            else -> {
-                println("Unknown element: ${child.name}")
-            }
-        }
-    }
+fun reverseUrl(url: String): String {
+    return url.split(".").reversed().joinToString(".")
+}
+
+fun changeAppId(id: String, name: String, outputFolder: File) {
+    val mainActivity = File(outputFolder, "app/src/main/java/at/crowdware/freebookreader/MainActivity.kt")
+    exchangePlaceholders(mainActivity , "https://crowdware.github.io/FreeBookReader/app.sml", "https://" +  reverseUrl(id) + "/app.sml")
+
+    val baseComposeActivity = File(outputFolder, "nocodelibmobile/src/main/java/at/crowdware/nocodelibmobile/BaseComposeActivity.kt")
+    exchangePlaceholders(baseComposeActivity , "ContentCache/crowdware_github_io/NoCode", "ContentCache/" + reverseUrl(id).replace(".", "_"))
+
+    val build = File(outputFolder, "app/build.gradle.kts")
+    exchangePlaceholders(build , "applicationId = \"at.crowdware.freebookreader\"", "applicationId = \"" + id + "\"")
+
+    val manifest = File(outputFolder, "app/src/main/AndroidManifest.xml")
+    exchangePlaceholders(manifest , "android:label=\"FreeBookReader\"", "android:label=\"" + name + "\"")
+    
+}
+
+fun exchangePlaceholders(file: File, placeHolder: String, newValue: String) {
+    if (!file.exists()) return
+    val content = file.readText()
+    val replaced = content.replace(placeHolder, newValue)
+    file.writeText(replaced)
 }
