@@ -21,6 +21,9 @@ class APKPlugin : SmlExportPlugin {
     override val label = "APK Generator"
     override val icon = "icon.svg"
 
+
+// TODO: ein APK pro Sprache
+//      lang auch in der AppId einbauen
     override fun export(source: String, outputDir: File): ExportStatus {
         val outputFiles = mutableListOf<File>()
 
@@ -38,6 +41,9 @@ class APKPlugin : SmlExportPlugin {
             copySources(File(source, "parts"), outputFolder)
             copySources(File(source, "translations"), outputFolder)
             changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder)
+
+            setLanguage(outputFolder, "en")
+            setPrecashed(outputFolder)
         }
         return ExportStatus(true, "Generated APK", outputFiles)
     }
@@ -114,9 +120,35 @@ fun changeAppId(id: String, name: String, outputFolder: File) {
     
 }
 
+fun setLanguage(outputFolder: File, lang: String) {
+    val mainActivity = File(outputFolder, "app/src/main/java/at/crowdware/freebookreader/MainActivity.kt")
+    insertAfter(mainActivity , "LocaleManager.init(applicationContext, resources)", "\n\t\t\tLocaleManager.setLocale(applicationContext, \"" + lang + "\")")
+}
+
+fun setPrecashed(outputFolder: File) {
+    val app = File(outputFolder, "app/src/main/assets/app.sml")
+    insertAfter(app, "App {", "\n\tprecached: true")
+}
+
 fun exchangePlaceholders(file: File, placeHolder: String, newValue: String) {
     if (!file.exists()) return
     val content = file.readText()
     val replaced = content.replace(placeHolder, newValue)
     file.writeText(replaced)
+}
+
+fun insertAfter(file: File, searchFor: String, insertValue: String) {
+    if (!file.exists()) return
+    val content = file.readText()
+    val index = content.indexOf(searchFor)
+    if (index == -1) return // nothing found
+
+    // Insert after the search string
+    val newContent = buildString {
+        append(content.substring(0, index + searchFor.length))
+        append(insertValue)
+        append(content.substring(index + searchFor.length))
+    }
+
+    file.writeText(newContent)
 }
