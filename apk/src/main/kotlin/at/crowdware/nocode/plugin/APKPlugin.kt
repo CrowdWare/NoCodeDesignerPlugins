@@ -21,7 +21,8 @@ class APKPlugin : SmlExportPlugin {
     override val label = "APK Generator"
     override val icon = "icon.svg"
 
-    override fun export(source: String, outputDir: File): ExportStatus {
+    override suspend fun export(source: String, outputDir: File, onLog: (String) -> Unit): ExportStatus {
+        onLog("export started...")
         val outputFiles = mutableListOf<File>()
         val appFile = File(source, "app.sml")
         val appSml = appFile.readText()
@@ -32,7 +33,9 @@ class APKPlugin : SmlExportPlugin {
                 val name = getStringValue(parsedApp, "name", "")
                 val outputFolder = File(outputDir, "apk-plugin/$name-$lang")
                 outputFolder.mkdirs()
+                onLog("copying template")
                 copyTemplate(outputFolder)
+                onLog("copying source")
                 copySources(File(source, "app.sml"), outputFolder)
                 copySources(File(source, "images"), outputFolder)
                 copySources(File(source, "pages"), outputFolder)
@@ -41,24 +44,33 @@ class APKPlugin : SmlExportPlugin {
                 changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder, lang)
                 setLanguage(outputFolder, lang)
                 setPrecashed(outputFolder)
-                // TODO, Ausgabe im Client nötig, weils länger dauert 
-                //runGradleBuild(outputFolder)
+                onLog("starting to build apk")
+                val exitCode = runGradleBuild(outputFolder) { line ->
+                    println(">> $line")
+                    onLog(line) 
+                }
             }
         }
         return ExportStatus(true, "Generated APK", outputFiles)
     }
 }
 
-fun runGradleBuild(projectDir: File): Int {
-    val gradlew = File(projectDir, "gradlew")
+suspend fun runGradleBuild(projectDir: File, onLog: suspend (String) -> Unit): Int {
+    val gradlew = File(projectDir, if (System.getProperty("os.name").startsWith("Windows")) "gradlew.bat" else "gradlew")
     if (!gradlew.exists()) throw IllegalArgumentException("gradlew not found in ${projectDir.absolutePath}")
 
     val process = ProcessBuilder(gradlew.absolutePath, "assembleRelease")
         .directory(projectDir)
-        .inheritIO() // leitet stdout/stderr direkt durch
+        .redirectErrorStream(true)
         .start()
 
-    return process.waitFor() // Rückgabecode (0 = OK)
+    process.inputStream.bufferedReader().useLines { lines ->
+        for (line in lines) {
+            onLog(line)
+        }
+    }
+
+    return process.waitFor()
 }
 
 fun copyTemplate(outputDir: File) {

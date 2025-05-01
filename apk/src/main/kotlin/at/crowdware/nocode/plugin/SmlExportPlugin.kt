@@ -31,5 +31,5 @@ interface SmlExportPlugin {
     val label: String           // z. B. "EPUB 3", "Html 5"
     val icon: String?           // Optional: "epub.svg", als Pfad oder Ressource
 
-    fun export(source: String, outputDir: File): ExportStatus
+    suspend fun export(source: String, outputDir: File, onLog: (String) -> Unit = {}): ExportStatus
 }
