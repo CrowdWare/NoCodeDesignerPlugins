@@ -17,39 +17,49 @@ class HTML5Plugin : SmlExportPlugin {
     override val label = "HTML5 Generator"
     override val icon = "icon.svg"
 
-    override fun export(source: String, outputDir: File): ExportStatus {
+    override suspend fun export(source: String, outputDir: File, onLog: (String) -> Unit): ExportStatus {
+        onLog("export started...")
         val outputFiles = mutableListOf<File>()
-        val languages = listOf("de", "en", "pt", "fr", "eo", "es")
-        for (lang in languages) {
-            val partDir = File(source, "pages-$lang")
-            partDir.walkTopDown().forEach { file ->
+        val langs = getLanguages(source).orEmpty()
+        val pagesDir = File(source, "pages")
+        val appFile = File(source, "app.sml")
+        val appSml = appFile.readText()
+        val (parsedApp, _) = parseSML(appSml)
+        if (parsedApp != null) {
+            val name = getStringValue(parsedApp, "name", "")
+            val outputFolder = File(outputDir, "html5-plugin/$name")
+            outputFolder.mkdirs()
+            pagesDir.walkTopDown().forEach { file ->
                 if (file.isFile) {
-                    println("Rendering: ${file.absoluteFile}")
                     val pageSml = file.readText()
                     val (parsedPage, _) = parseSML(pageSml)
                     val title = getStringValue(parsedPage!!, "title", "")
-                    val outputFile = File(outputDir, "${file.name.substringBefore(".")}-$lang.html")
-                    val content = StringBuilder()
-                    content.append("<!doctype html>\n")
-                    content.append("<html lang=\"${lang}\">\n")
-                    content.append("<head>\n")
-                    content.append("<meta charset=\"utf-8\">\n")
-                    content.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
-                    content.append("<title>$title</title>\n")
-                    content.append("<link rel=\"stylesheet\" href=\"assets/css/style.css\">\n")
-                    content.append("<script src=\"assets/js/script.js\"></script>\n")
-                    content.append("</head>\n")
-                    content.append("<body>\n")
-                    renderElements(parsedPage, content, source, lang)
-                    content.append("</body>\n")
-                    content.append("</html>\n")
-                    outputFile.writeText(content.toString())
-                    outputFiles.add(outputFile)
+                    for (lang in langs) {
+                        onLog("writing file " + file.name + " for language " + lang)
+                        println("Rendering: ${file.absoluteFile}")
+                        val outputFile = File(outputFolder, "${file.name.substringBefore(".")}-$lang.html")
+                        val content = StringBuilder()
+                        content.append("<!doctype html>\n")
+                        content.append("<html lang=\"${lang}\">\n")
+                        content.append("<head>\n")
+                        content.append("<meta charset=\"utf-8\">\n")
+                        content.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+                        content.append("<title>$title</title>\n")
+                        content.append("<link rel=\"stylesheet\" href=\"assets/css/style.css\">\n")
+                        content.append("<script src=\"assets/js/script.js\"></script>\n")
+                        content.append("</head>\n")
+                        content.append("<body>\n")
+                        renderElements(parsedPage, content, source, lang)
+                        content.append("</body>\n")
+                        content.append("</html>\n")
+                        outputFile.writeText(content.toString())
+                        outputFiles.add(outputFile)
+                    }
                 }
             }
+            copyImages(source, outputFolder)
+            createAssets(outputFolder)
         }
-        copyImages(source, outputDir)
-        createAssets(outputDir)
         return ExportStatus(true, "Generated HTML", outputFiles)
     }
 }
@@ -119,13 +129,9 @@ fun renderElements(node: SmlNode, content: StringBuilder, source: String, lang: 
             }
             "Markdown" -> {
                 val text = getStringValue(child, "text", "")
-                if (text.isNotEmpty()) {
-                    val md = renderMarkdown(text)
-                    content.append("<p>$md</p>\n")
-                }
-                val part = getStringValue(child, "part", "")
-                if (part.isNotEmpty()) {
-                    val file = File(source, "parts-$lang/$part")
+                if (text.startsWith("part:")) {
+                    val part = text.substringAfter("part:")
+                    val file = File(source, "parts/$part-$lang.md")
                     try {
                         val txt = file.readText(Charsets.UTF_8)
                         val md = renderMarkdown(txt)
@@ -133,6 +139,9 @@ fun renderElements(node: SmlNode, content: StringBuilder, source: String, lang: 
                     } catch(e: Exception) {
                         println("An error occured: ${e.message}")
                     }
+                } else {
+                    val md = renderMarkdown(text)
+                    content.append("<p>$md</p>\n")
                 }
             }
             "Image" -> {
@@ -140,7 +149,7 @@ fun renderElements(node: SmlNode, content: StringBuilder, source: String, lang: 
                 content.append("<img src=\"assets/images/$src\">\n")
             }
             "Button" -> {
-                val label = getStringValue(child, "label", "")
+                val label = translate(getStringValue(child, "label", ""), source, lang)
                 val link = getStringValue(child, "link", "")
                 val href = resolveLink(link, lang)
                 content.append("<a href=\"$href\" style=\"flex: 1;\"><button class=\"fullwidth-button\">$label</button></a>\n")
@@ -192,4 +201,45 @@ fun renderMarkdown(text: String): String {
     val document = parser.parse(text)
     val renderer = HtmlRenderer.builder(options).build()
     return renderer.render(document)
+}
+
+fun getLanguages(source: String): List<String> {
+    val languages = mutableSetOf<String>()
+
+    val regex = Regex("-(.+)\\.(sml|md)")
+
+    val dirsAndExtensions = listOf(
+        "translations" to "sml",
+        "parts" to "md"
+    )
+
+    for ((dirName, expectedExtension) in dirsAndExtensions) {
+        val dir = File(source, dirName)
+        if (dir.exists() && dir.isDirectory) {
+            dir.listFiles()
+                ?.filter { it.isFile && it.name.contains("-") && it.name.endsWith(".$expectedExtension") }
+                ?.forEach { file ->
+                    regex.find(file.name)?.groupValues?.get(1)?.let { lang ->
+                        languages.add(lang)
+                    }
+                }
+        }
+    }
+    return languages.sorted()
+}
+
+fun translate(text: String, source: String, lang: String): String {
+    var txt = text
+    val file = File(source, "translations/Strings-$lang.sml")
+    if (file.exists()) {
+        val content = file.readText()
+        val (parsedStrings, _) = parseSML(content)
+        if (parsedStrings != null) {
+            val regex = Regex("""string:([A-Za-z0-9_\-]+)""")
+            txt = regex.replace(txt) { matchResult ->
+                getStringValue(parsedStrings, matchResult.groupValues[1], matchResult.value)
+            }
+        }
+    }
+    return txt
 }
