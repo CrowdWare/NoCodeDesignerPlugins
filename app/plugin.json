@@ -1,0 +1,8 @@
+{
+  "id": "app-plugin",
+  "label": "APP Editor",
+  "version": "1.0.0",
+  "entry": "build/libs/app-plugin-1.0.0.jar",
+  "mainClass": "at.crowdware.nocode.plugin.APPPlugin",
+  "icon": "icon.svg"
+}
