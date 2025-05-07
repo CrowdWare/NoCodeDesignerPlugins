@@ -39,7 +39,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import androidx.compose.ui.graphics.Color
 
 
 @Composable
@@ -47,13 +47,14 @@ fun TextInput(
     text: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
-    singleLine: Boolean = true) {
+    singleLine: Boolean = true,
+    accentColor: Color) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     var showDirectoryPicker by remember { mutableStateOf(false) }
 
     val borderColor = if (isFocused) {
-        MaterialTheme.colors.onSurface
+        accentColor
     } else {
         MaterialTheme.colors.onPrimary
     }
