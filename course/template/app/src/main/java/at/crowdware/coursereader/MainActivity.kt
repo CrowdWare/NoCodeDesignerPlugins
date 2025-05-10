@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,6 +61,7 @@ import at.crowdware.coursereader.ui.Lecture
 import at.crowdware.coursereader.ui.ShowLecture
 import at.crowdware.coursereader.ui.hexToColor
 import at.crowdware.coursereader.ui.theme.CourseReaderTheme
+import at.crowdware.coursereader.util.loadAndParseSml
 
 class MainActivity : ComponentActivity() {
 
@@ -73,76 +73,36 @@ class MainActivity : ComponentActivity() {
             CourseReaderTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val context = this
-                    var lang by remember { mutableStateOf("") }
                     var page by remember { mutableStateOf("") }
-                    val topicList = mutableListOf<AccordionEntry>()
                     var showAccordion by remember { mutableStateOf(true) }
-                    val theme = Theme()
-                    val inputStream = this.assets.open("app.sml")
-                    val fileContent = inputStream.bufferedReader().use { it.readText() }
-                    val (parsedApp, _) = parseSML(fileContent)
-                    if (parsedApp != null) {
-                        for (node in parsedApp.children) {
-                            if (node.name == "Theme") {
-                                theme.primary = getStringValue(node, "primary", "")
-                                theme.onPrimary = getStringValue(node, "onPrimary", "")
-                                theme.primaryContainer = getStringValue(node, "primaryContainer", "")
-                                theme.onPrimaryContainer = getStringValue(node, "onPrimaryContainer", "")
-                                theme.surface = getStringValue(node, "surface", "")
-                                theme.onSurface = getStringValue(node, "onSurface", "")
-                                theme.secondary = getStringValue(node, "secondary", "")
-                                theme.onSecondary = getStringValue(node, "onSecondary", "")
-                                theme.secondaryContainer = getStringValue(node, "secondaryContainer", "")
-                                theme.onSecondaryContainer = getStringValue(node, "onSecondaryContainer", "")
-                                theme.tertiary = getStringValue(node, "tertiary", "")
-                                theme.onTertiary = getStringValue(node, "onTertiary", "")
-                                theme.tertiaryContainer = getStringValue(node, "tertiaryContainer", "")
-                                theme.onTertiaryContainer = getStringValue(node, "onTertiaryContainer", "")
-                                theme.outline = getStringValue(node, "outline", "")
-                                theme.outlineVariant = getStringValue(node, "outlineVariant", "")
-                                theme.onErrorContainer = getStringValue(node, "onErrorContainer", "")
-                                theme.onError = getStringValue(node, "onError", "")
-                                theme.inverseSurface = getStringValue(node, "inverseSurface", "")
-                                theme.inversePrimary = getStringValue(node, "inversePrimary", "")
-                                theme.inverseOnSurface = getStringValue(node, "inverseOnSurface", "")
-                                theme.background = getStringValue(node, "background", "")
-                                theme.onBackground = getStringValue(node, "onBackground", "")
-                                theme.error = getStringValue(node, "error", "")
-                                theme.scrim = getStringValue(node, "scrim", "")
-                                SetSystemBarsColor(
-                                    statusBarColor = hexToColor(theme, theme.background),
-                                    navigationBarColor = hexToColor(theme, theme.background)
-                                )
-                            }
-                            else if (node.name == "Course") {
-                                lang = getStringValue(node, "lang", "")
-                                for (topic in node.children) {
-                                    if (topic.name == "Topic") {
-                                        val entries = mutableListOf<Lecture>()
-                                        for (lecture in topic.children) {
-                                            entries.add(
-                                                Lecture(
-                                                    label = getStringValue(lecture, "label", ""),
-                                                    page = getStringValue(lecture, "src", "")
-                                                )
-                                            )
-                                        }
-                                        topicList.add(
-                                            AccordionEntry(
-                                                getStringValue(topic, "label", ""),
-                                                entries
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                    val fileContent = remember {
+                        context.assets.open("app.sml").bufferedReader().use { it.readText() }
                     }
-                    Column(modifier = Modifier.padding(innerPadding).background(hexToColor(theme, theme.background))) {
-                        // Header mit Toggle-Button
-                        Row(modifier = Modifier.height(35.dp).padding(8.dp)) {
+                    val (parsedApp, _) = remember(fileContent) {
+                        parseSML(fileContent)
+                    }
+                    val parsedData by remember {
+                        mutableStateOf(loadAndParseSml(context))
+                    }
+                    val theme = remember(parsedData) { parsedData.theme }
+                    val topicList = remember(parsedData) { parsedData.topics }
+                    val lang = remember(parsedData) { parsedData.lang }
+                    val courseTitle = remember(parsedData) { parsedData.courseTitle }
+
+                    SetSystemBarsColor(
+                        statusBarColor = hexToColor(theme, theme.background),
+                        navigationBarColor = hexToColor(theme, theme.background)
+                    )
+
+                    Column(modifier = Modifier.padding(innerPadding).background(hexToColor(theme, theme.primary))) {
+                        Row(modifier = Modifier.height(40.dp).padding(8.dp)) {
                             Text(
                                 text = "Topics",
+                                color = hexToColor(theme, theme.onBackground),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = courseTitle,
                                 color = hexToColor(theme, theme.onBackground),
                                 modifier = Modifier.weight(1f)
                             )

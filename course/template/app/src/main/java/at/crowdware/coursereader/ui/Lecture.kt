@@ -56,7 +56,15 @@ import java.lang.Exception
 
 @Composable
 fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
-    if (page.isEmpty()) return
+    if (page.isEmpty()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Bitte wähle links eine Lektion aus der Liste aus.",
+                color = hexToColor(theme, theme.onSurface)
+            )
+        }
+        return
+    }
 
     var content: String? = null
     try {
@@ -83,6 +91,13 @@ fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
                     renderElement(context, theme, element, lang)
                 }
             }
+        }
+    } else {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Beim Laden der Datei $page ist ein Fehler aufgetreten.",
+                color = hexToColor(theme, theme.onSurface)
+            )
         }
     }
 }

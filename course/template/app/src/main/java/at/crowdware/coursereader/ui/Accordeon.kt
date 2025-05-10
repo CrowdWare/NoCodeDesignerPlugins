@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import at.crowdware.coursereader.Theme
 
 data class Lecture(val label: String, val page: String)
-data class AccordionEntry(val title: String, val content: MutableList<Lecture>)
+data class AccordionEntry(val title: String, val content: List<Lecture>)
 
 @Composable
 fun AccordionItem(theme: Theme, entry: AccordionEntry, onClick: (String) -> Unit) {
