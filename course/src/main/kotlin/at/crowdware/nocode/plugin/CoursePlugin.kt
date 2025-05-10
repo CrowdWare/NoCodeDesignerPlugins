@@ -48,8 +48,6 @@ class CoursePlugin : NoCodePlugin, ExportPlugin {
                         outputFolder,
                         lang
                     )
-                    setLanguage(outputFolder, lang)
-                    setPrecashed(outputFolder)
                     onLog("starting to build apk")
                     //val exitCode = runGradleBuild(outputFolder) { line ->
                     //    println(">> $line")
@@ -137,28 +135,11 @@ fun reverseUrl(url: String): String {
 }
 
 fun changeAppId(id: String, name: String, outputFolder: File, lang: String) {
-    val mainActivity = File(outputFolder, "app/src/main/java/at/crowdware/freebookreader/MainActivity.kt")
-    exchangePlaceholders(mainActivity , "https://crowdware.github.io/FreeBookReader/app.sml", "https://" + reverseUrl(id) + lang + "/app.sml")
-
-    val baseComposeActivity = File(outputFolder, "nocodelibmobile/src/main/java/at/crowdware/nocodelibmobile/BaseComposeActivity.kt")
-    exchangePlaceholders(baseComposeActivity , "ContentCache/crowdware_github_io/NoCode", "ContentCache/" + reverseUrl(id).replace(".", "_") + lang)
-
     val build = File(outputFolder, "app/build.gradle.kts")
-    exchangePlaceholders(build , "applicationId = \"at.crowdware.freebookreader\"", "applicationId = \"" + id + lang + "\"")
+    exchangePlaceholders(build , "applicationId = \"at.crowdware.coursereader\"", "applicationId = \"" + id + lang + "\"")
 
     val manifest = File(outputFolder, "app/src/main/AndroidManifest.xml")
-    exchangePlaceholders(manifest , "android:label=\"FreeBookReader\"", "android:label=\"" + name + "\"")
-    
-}
-
-fun setLanguage(outputFolder: File, lang: String) {
-    val mainActivity = File(outputFolder, "app/src/main/java/at/crowdware/freebookreader/MainActivity.kt")
-    insertAfter(mainActivity , "LocaleManager.init(applicationContext, resources)", "\n\t\t\tLocaleManager.setLocale(applicationContext, \"" + lang + "\")")
-}
-
-fun setPrecashed(outputFolder: File) {
-    val app = File(outputFolder, "app/src/main/assets/app.sml")
-    insertAfter(app, "App {", "\n\tprecached: true")
+    exchangePlaceholders(manifest , "android:label=\"CourseReader\"", "android:label=\"" + name + "\"")
 }
 
 fun exchangePlaceholders(file: File, placeHolder: String, newValue: String) {
