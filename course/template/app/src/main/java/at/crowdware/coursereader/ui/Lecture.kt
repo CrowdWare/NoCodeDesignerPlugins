@@ -21,11 +21,14 @@ package at.crowdware.coursereader.ui
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,22 +51,33 @@ import at.crowdware.coursereader.getIntValue
 import at.crowdware.coursereader.getPadding
 import at.crowdware.coursereader.getStringValue
 import at.crowdware.coursereader.parseSML
+import java.lang.Exception
 
 
 @Composable
 fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
     if (page.isEmpty()) return
-    val inputStream = context.assets.open("pages/$page")
-    val content = inputStream?.bufferedReader()?.use { it.readText() }
+
+    var content: String? = null
+    try {
+        val inputStream = context.assets.open("pages/$page")
+        content = inputStream?.bufferedReader()?.use { it.readText() }
+    } catch (e: Exception) {
+        println("An error occured: ${e.message}")
+    }
     if (content != null) {
         val (parsedPage, _) = parseSML(content)
         if (parsedPage != null) {
             val padding = getPadding(parsedPage)
             Column(
-                modifier = Modifier.
-                background(MaterialTheme.colorScheme.background).
-                fillMaxSize().
-                padding(top = padding.top.dp, bottom = padding.bottom.dp, start = padding.left.dp, end = padding.right.dp)) {
+                modifier = Modifier.background(hexToColor(theme, theme.background))
+                    .fillMaxSize().padding(
+                        top = padding.top.dp,
+                        bottom = padding.bottom.dp,
+                        start = padding.left.dp,
+                        end = padding.right.dp
+                    )
+            ) {
 
                 for (element in parsedPage.children) {
                     renderElement(context, theme, element, lang)

@@ -20,10 +20,12 @@
 
 package at.crowdware.coursereader
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,15 +35,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import at.crowdware.coursereader.ui.AccordionEntry
 import at.crowdware.coursereader.ui.AccordionList
 import at.crowdware.coursereader.ui.Lecture
@@ -62,9 +76,10 @@ class MainActivity : ComponentActivity() {
                     var lang by remember { mutableStateOf("") }
                     var page by remember { mutableStateOf("") }
                     val topicList = mutableListOf<AccordionEntry>()
-                    var theme = Theme()
+                    var showAccordion by remember { mutableStateOf(true) }
+                    val theme = Theme()
                     val inputStream = this.assets.open("app.sml")
-                    var fileContent = inputStream.bufferedReader().use { it.readText() }
+                    val fileContent = inputStream.bufferedReader().use { it.readText() }
                     val (parsedApp, _) = parseSML(fileContent)
                     if (parsedApp != null) {
                         for (node in parsedApp.children) {
@@ -94,6 +109,10 @@ class MainActivity : ComponentActivity() {
                                 theme.onBackground = getStringValue(node, "onBackground", "")
                                 theme.error = getStringValue(node, "error", "")
                                 theme.scrim = getStringValue(node, "scrim", "")
+                                SetSystemBarsColor(
+                                    statusBarColor = hexToColor(theme, theme.background),
+                                    navigationBarColor = hexToColor(theme, theme.background)
+                                )
                             }
                             else if (node.name == "Course") {
                                 lang = getStringValue(node, "lang", "")
@@ -120,19 +139,28 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     Column(modifier = Modifier.padding(innerPadding).background(hexToColor(theme, theme.background))) {
+                        // Header mit Toggle-Button
                         Row(modifier = Modifier.height(35.dp).padding(8.dp)) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("Topics", color = hexToColor(theme, theme.onBackground))
+                            Text(
+                                text = "Topics",
+                                color = hexToColor(theme, theme.onBackground),
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { showAccordion = !showAccordion }) {
+                                Icon(
+                                    imageVector = if (showAccordion) Icons.Default.ArrowBack else Icons.Default.ArrowForward,
+                                    contentDescription = "Toggle Accordion",
+                                    tint = hexToColor(theme, theme.onBackground)
+                                )
                             }
                         }
                         Row(
                             modifier = Modifier.background(hexToColor(theme, theme.surface))
                                 .fillMaxHeight().padding(8.dp)
                         ) {
-                            Column(modifier = Modifier.width(300.dp)) {
-
-                                AccordionList(theme, items = topicList) { p ->
-                                    page = p
+                            AnimatedVisibility(visible = showAccordion) {
+                                Column(modifier = Modifier.width(200.dp)) {
+                                    AccordionList(theme, items = topicList) { p -> page = p }
                                 }
                             }
                             Column(modifier = Modifier.fillMaxWidth()) {
@@ -146,5 +174,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun SetSystemBarsColor(statusBarColor: Color, navigationBarColor: Color) {
+    val view = LocalView.current
+    val window = (view.context as Activity).window
+
+    SideEffect {
+        window.statusBarColor = statusBarColor.toArgb()
+        window.navigationBarColor = navigationBarColor.toArgb()
+
+        val insetsController = WindowCompat.getInsetsController(window, view)
+        insetsController.isAppearanceLightStatusBars = statusBarColor.luminance() > 0.5f
+        insetsController.isAppearanceLightNavigationBars = navigationBarColor.luminance() > 0.5f
+    }
+}
 
 

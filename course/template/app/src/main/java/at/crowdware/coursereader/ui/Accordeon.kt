@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.ButtonColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import at.crowdware.coursereader.Theme
 
@@ -43,7 +45,7 @@ data class Lecture(val label: String, val page: String)
 data class AccordionEntry(val title: String, val content: MutableList<Lecture>)
 
 @Composable
-fun AccordionItem(entry: AccordionEntry, onClick: (String) -> Unit) {
+fun AccordionItem(theme: Theme, entry: AccordionEntry, onClick: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
     Column(
@@ -51,31 +53,36 @@ fun AccordionItem(entry: AccordionEntry, onClick: (String) -> Unit) {
             .fillMaxWidth()
             .clickable { expanded = !expanded }
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .background(MaterialTheme.colorScheme.primary)
+            .background(hexToColor(theme, theme.primary))
             .animateContentSize()
             .padding(4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = entry.title,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onPrimary
+                fontWeight = FontWeight.Bold,
+                color = hexToColor(theme, theme.onPrimary)
             )
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Expand",
                 modifier = Modifier.rotate(if (expanded) 180f else 0f),
-                tint = MaterialTheme.colorScheme.onPrimary
+                tint = hexToColor(theme, theme.onPrimary)
             )
         }
 
         if (expanded) {
-            Spacer(modifier = Modifier.height(8.dp))
             for (item in entry.content) {
                 Button(
                     onClick = {onClick(item.page)},
+                    colors = ButtonColors(
+                        containerColor = hexToColor(theme, theme.primary),
+                        contentColor = hexToColor(theme, theme.primary),
+                        disabledContentColor = hexToColor(theme, theme.primary),
+                        disabledContainerColor = hexToColor(theme, theme.primary)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
@@ -85,7 +92,7 @@ fun AccordionItem(entry: AccordionEntry, onClick: (String) -> Unit) {
                         Text(
                             text = item.label,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = hexToColor(theme, theme.onPrimary)
                         )
                     }
                 }
@@ -114,13 +121,13 @@ fun AccordionList(
     ) {
         Column(
             modifier = Modifier
-                .verticalScroll(scrollState)
+                .verticalScroll(scrollState).background(hexToColor(theme, theme.primary))
                 .onGloballyPositioned {
                     contentHeight = it.size.height
                 }
         ) {
             items.forEach { entry ->
-                AccordionItem(entry, onClick = onItemClicked)
+                AccordionItem(theme, entry, onClick = onItemClicked)
             }
         }
 
