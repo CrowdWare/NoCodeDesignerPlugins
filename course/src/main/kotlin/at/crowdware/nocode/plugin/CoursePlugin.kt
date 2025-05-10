@@ -16,9 +16,9 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-class APKPlugin : NoCodePlugin, ExportPlugin {
-    override val id = "apk-plugin"
-    override val label = "APK Generator"
+class CoursePlugin : NoCodePlugin, ExportPlugin {
+    override val id = "course-plugin"
+    override val label = "Course Generator"
     override val icon = "icon.svg"
 
     override suspend fun export(source: String, outputDir: File, onLog: (String) -> Unit): ExportStatus {
@@ -28,26 +28,33 @@ class APKPlugin : NoCodePlugin, ExportPlugin {
         val appSml = appFile.readText()
         val (parsedApp, _) = parseSML(appSml)
         if (parsedApp != null) {
-            val langs = getLanguages(source).orEmpty()
-            for (lang in langs) {
-                val name = getStringValue(parsedApp, "name", "")
-                val outputFolder = File(outputDir, "$name-$lang")
-                outputFolder.mkdirs()
-                onLog("copying template")
-                copyTemplate(outputFolder)
-                onLog("copying source")
-                copySources(File(source, "app.sml"), outputFolder)
-                copySources(File(source, "images"), outputFolder)
-                copySources(File(source, "pages"), outputFolder)
-                copySources(File(source, "parts"), outputFolder)
-                copySources(File(source, "translations"), outputFolder)
-                changeAppId(getStringValue(parsedApp, "id", ""), getStringValue(parsedApp, "name", ""), outputFolder, lang)
-                setLanguage(outputFolder, lang)
-                setPrecashed(outputFolder)
-                onLog("starting to build apk")
-                val exitCode = runGradleBuild(outputFolder) { line ->
-                    println(">> $line")
-                    onLog(line) 
+            val name = getStringValue(parsedApp, "name", "")
+            for (node in parsedApp.children) {
+                if (node.name == "Course") {
+                    val lang = getStringValue(node, "lang", "")
+                    val outputFolder = File(outputDir, lang)
+                    outputFolder.mkdirs()
+                    onLog("copying template")
+                    copyTemplate(outputFolder)
+                    onLog("copying source")
+                    copySources(File(source, "app.sml"), outputFolder)
+                    copySources(File(source, "images"), outputFolder)
+                    copySources(File(source, "pages"), outputFolder)
+                    copySources(File(source, "parts"), outputFolder)
+                    copySources(File(source, "translations"), outputFolder)
+                    changeAppId(
+                        getStringValue(parsedApp, "id", ""),
+                        getStringValue(parsedApp, "name", ""),
+                        outputFolder,
+                        lang
+                    )
+                    setLanguage(outputFolder, lang)
+                    setPrecashed(outputFolder)
+                    onLog("starting to build apk")
+                    //val exitCode = runGradleBuild(outputFolder) { line ->
+                    //    println(">> $line")
+                    //    onLog(line)
+                    //}
                 }
             }
         }
@@ -74,7 +81,7 @@ suspend fun runGradleBuild(projectDir: File, onLog: suspend (String) -> Unit): I
 }
 
 fun copyTemplate(outputDir: File) {
-    val jarPath = File(APKPlugin::class.java.protectionDomain.codeSource.location.toURI())
+    val jarPath = File(CoursePlugin::class.java.protectionDomain.codeSource.location.toURI())
 
     // Von der JAR-Datei nach oben navigieren zum Plugin-Root
     val pluginDir = jarPath.parentFile.parentFile.parentFile

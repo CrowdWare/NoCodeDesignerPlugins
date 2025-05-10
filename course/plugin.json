@@ -1,0 +1,8 @@
+{
+  "id": "course-plugin",
+  "label": "Course Generator",
+  "version": "1.0.0",
+  "entry": "build/libs/course-plugin-1.0.0.jar",
+  "mainClass": "at.crowdware.nocode.plugin.CoursePlugin",
+  "icon": "icon.svg"
+}
