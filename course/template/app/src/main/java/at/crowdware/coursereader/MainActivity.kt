@@ -66,6 +66,14 @@ import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 
+
+// TODO
+// Sound
+// Fortschrittsbalken
+// Ankreuzen für erledigt
+// Video Minuten anzeigen
+// Zeit für Lektion Vorschau
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -190,7 +198,7 @@ fun ConfigureSystemBars(
 
         controller.isAppearanceLightStatusBars = statusBarColor.luminance() > 0.5f
         controller.isAppearanceLightNavigationBars = navigationBarColor.luminance() > 0.5f
-        
+
         if (hideNavigationBar) {
             WindowCompat.setDecorFitsSystemWindows(window, false)
             controller.hide(WindowInsetsCompat.Type.navigationBars())
