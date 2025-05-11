@@ -55,6 +55,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import at.crowdware.coursereader.ui.AccordionEntry
 import at.crowdware.coursereader.ui.AccordionList
 import at.crowdware.coursereader.ui.Lecture
@@ -89,9 +91,10 @@ class MainActivity : ComponentActivity() {
                     val lang = remember(parsedData) { parsedData.lang }
                     val courseTitle = remember(parsedData) { parsedData.courseTitle }
 
-                    SetSystemBarsColor(
+                    ConfigureSystemBars(
                         statusBarColor = hexToColor(theme, theme.background),
-                        navigationBarColor = hexToColor(theme, theme.background)
+                        navigationBarColor = hexToColor(theme, theme.background),
+                        true
                     )
 
                     Column(modifier = Modifier.padding(innerPadding).background(hexToColor(theme, theme.primary))) {
@@ -135,17 +138,31 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SetSystemBarsColor(statusBarColor: Color, navigationBarColor: Color) {
+fun ConfigureSystemBars(
+    statusBarColor: Color,
+    navigationBarColor: Color,
+    hideNavigationBar: Boolean = false
+) {
     val view = LocalView.current
     val window = (view.context as Activity).window
 
     SideEffect {
+        // Setze Farben
         window.statusBarColor = statusBarColor.toArgb()
         window.navigationBarColor = navigationBarColor.toArgb()
 
-        val insetsController = WindowCompat.getInsetsController(window, view)
-        insetsController.isAppearanceLightStatusBars = statusBarColor.luminance() > 0.5f
-        insetsController.isAppearanceLightNavigationBars = navigationBarColor.luminance() > 0.5f
+        val controller = WindowCompat.getInsetsController(window, view)
+
+        controller.isAppearanceLightStatusBars = statusBarColor.luminance() > 0.5f
+        controller.isAppearanceLightNavigationBars = navigationBarColor.luminance() > 0.5f
+
+        // Optional Navigation Bar ausblenden
+        if (hideNavigationBar) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            controller.hide(WindowInsetsCompat.Type.navigationBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
     }
 }
 
