@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Icon ganz links
                             IconButton(
                                 onClick = { showAccordion = !showAccordion }
                             ) {
@@ -184,7 +183,6 @@ fun ConfigureSystemBars(
     val window = (view.context as Activity).window
 
     SideEffect {
-        // Setze Farben
         window.statusBarColor = statusBarColor.toArgb()
         window.navigationBarColor = navigationBarColor.toArgb()
 
@@ -192,8 +190,7 @@ fun ConfigureSystemBars(
 
         controller.isAppearanceLightStatusBars = statusBarColor.luminance() > 0.5f
         controller.isAppearanceLightNavigationBars = navigationBarColor.luminance() > 0.5f
-
-        // Optional Navigation Bar ausblenden
+        
         if (hideNavigationBar) {
             WindowCompat.setDecorFitsSystemWindows(window, false)
             controller.hide(WindowInsetsCompat.Type.navigationBars())
