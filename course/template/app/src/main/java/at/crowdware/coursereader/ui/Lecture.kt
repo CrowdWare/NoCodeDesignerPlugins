@@ -20,20 +20,27 @@
 package at.crowdware.coursereader.ui
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.view.ViewGroup
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -45,17 +52,24 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import at.crowdware.coursereader.SmlNode
 import at.crowdware.coursereader.Theme
+import at.crowdware.coursereader.getBoolValue
 import at.crowdware.coursereader.getIntValue
 import at.crowdware.coursereader.getPadding
 import at.crowdware.coursereader.getStringValue
 import at.crowdware.coursereader.parseSML
-import java.lang.Exception
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import java.io.IOException
 
 
 @Composable
 fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
+    val scrollState = rememberScrollState()
+
     if (page.isEmpty()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -69,7 +83,7 @@ fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
     var content: String? = null
     try {
         val inputStream = context.assets.open("pages/$page")
-        content = inputStream?.bufferedReader()?.use { it.readText() }
+        content = inputStream.bufferedReader()?.use { it.readText() }
     } catch (e: Exception) {
         println("An error occured: ${e.message}")
     }
@@ -77,8 +91,10 @@ fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
         val (parsedPage, _) = parseSML(content)
         if (parsedPage != null) {
             val padding = getPadding(parsedPage)
+            val scrollable = getBoolValue(parsedPage, "scrollable", false)
+            val modifier = if (scrollable) Modifier.verticalScroll(scrollState) else Modifier
             Column(
-                modifier = Modifier.background(hexToColor(theme, theme.background))
+                modifier = modifier.background(hexToColor(theme, theme.background))
                     .fillMaxSize().padding(
                         top = padding.top.dp,
                         bottom = padding.bottom.dp,
@@ -115,16 +131,13 @@ fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
             renderMarkdown(context, modifier = Modifier, theme, node, lang)
         }
         "Text" -> {
-            renderText(theme, node)
+            renderText(modifier = Modifier, theme, node)
         }
         "Image" -> {
-            renderImage(theme, node)
+            renderImage(context, theme, node)
         }
         "Youtube" -> {
             renderYoutube(theme, node)
-        }
-        "Button" -> {
-            renderButton(theme, node)
         }
         else -> {
             println("unhandled element: ${node.name}")
@@ -179,24 +192,72 @@ fun renderMarkdown(context: Context, modifier: Modifier = Modifier, theme: Theme
 }
 
 @Composable
-fun renderText(theme: Theme, node: SmlNode) {
+fun renderText(modifier: Modifier = Modifier, theme: Theme, node: SmlNode) {
     val text = getStringValue(node, "text", "")
-    Text(text)
+    val color = getStringValue(node, "color", "onBackground")
+    val fontSize = getIntValue(node, "fontSize", 16)
+    Text(
+        modifier = modifier.fillMaxWidth(),
+        text = text,
+        style = TextStyle(color = hexToColor(theme, color)),
+        fontSize = fontSize.sp,
+        fontWeight = getFontWeight(node),
+        textAlign = getTextAlign(node)
+    )
 }
 
 @Composable
-fun renderImage(theme: Theme, node: SmlNode) {
-
+fun renderImage(context: Context, theme: Theme, node: SmlNode) {
+    val scale = getStringValue(node, "scale", "")
+    val padding = getPadding(node)
+    val bitmap = loadImageFromAssets(context, "images/" + getStringValue(node, "src", ""))
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            contentScale = when(scale.lowercase()) {
+                "crop" -> ContentScale.Crop
+                "fit" -> ContentScale.Fit
+                "inside" -> ContentScale.Inside
+                "fillwidth" -> ContentScale.FillWidth
+                "fillbounds" -> ContentScale.FillBounds
+                "fillheight" -> ContentScale.FillHeight
+                "none" -> ContentScale.None
+                else -> ContentScale.Fit
+            }, modifier = Modifier
+                .padding(padding.left.dp, padding.top.dp, padding.right.dp, padding.bottom.dp)
+        )
+    }
 }
 
 @Composable
 fun renderYoutube(theme: Theme, node: SmlNode) {
+    val height = getIntValue(node, "height", 0)
+    val videoId = getStringValue(node, "id", "")
 
-}
+    val modifier = if (height > 0) Modifier.height(height.dp) else Modifier.fillMaxSize()
+    val heightPx = if (height > 0) {
+        with(LocalDensity.current) { height.dp.toPx().toInt() }
+    } else {
+        ViewGroup.LayoutParams.MATCH_PARENT
+    }
 
-@Composable
-fun renderButton(theme: Theme, node: SmlNode) {
-
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            YouTubePlayerView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    heightPx
+                )
+                addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                    override fun onReady(youTubePlayer: YouTubePlayer) {
+                        youTubePlayer.loadVideo(videoId, 0f)
+                    }
+                })
+            }
+        }
+    )
 }
 
 @Composable
@@ -471,3 +532,14 @@ val textAlignMap = mapOf(
     "right" to TextAlign.End,
     "" to TextAlign.Start
 )
+
+fun loadImageFromAssets(context: Context, filename: String): Bitmap? {
+    return try {
+        context.assets.open(filename).use { inputStream ->
+            BitmapFactory.decodeStream(inputStream)
+        }
+    } catch (e: IOException) {
+        e.printStackTrace()
+        null
+    }
+}
