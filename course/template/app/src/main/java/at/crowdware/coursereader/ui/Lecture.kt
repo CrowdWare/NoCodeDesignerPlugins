@@ -70,16 +70,6 @@ import java.io.IOException
 fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
     val scrollState = rememberScrollState()
 
-    if (page.isEmpty()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Bitte wähle links eine Lektion aus der Liste aus.",
-                color = hexToColor(theme, theme.onSurface)
-            )
-        }
-        return
-    }
-
     var content: String? = null
     try {
         val inputStream = context.assets.open("pages/$page")

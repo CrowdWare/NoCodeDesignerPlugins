@@ -109,4 +109,6 @@ dependencies {
 
     // 👇 NEU ab Kotlin 2.0 – explizit hinzufügen!
     implementation("androidx.compose.compiler:compiler:1.5.10")
+
+    implementation(libs.androidx.material.icons.extended)
 }
