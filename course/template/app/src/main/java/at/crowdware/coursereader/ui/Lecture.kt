@@ -22,20 +22,29 @@ package at.crowdware.coursereader.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.view.ViewGroup
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -53,6 +62,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.AssetDataSource
+import androidx.media3.datasource.DataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import at.crowdware.coursereader.SmlNode
 import at.crowdware.coursereader.Theme
 import at.crowdware.coursereader.getBoolValue
@@ -63,6 +78,7 @@ import at.crowdware.coursereader.parseSML
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import java.io.File
 import java.io.IOException
 
 
@@ -128,6 +144,12 @@ fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
         }
         "Youtube" -> {
             renderYoutube(theme, node)
+        }
+        "Spacer" -> {
+            renderSpacer(node)
+        }
+        "Sound" -> {
+            renderSound(context, node)
         }
         else -> {
             println("unhandled element: ${node.name}")
@@ -248,6 +270,51 @@ fun renderYoutube(theme: Theme, node: SmlNode) {
             }
         }
     )
+}
+
+@Composable
+fun renderSpacer(node: SmlNode) {
+    val amount = getIntValue(node, "amount", 0)
+    Spacer(modifier = Modifier.width(amount.dp).height(amount.dp))
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+fun renderSound(context: Context, node: SmlNode) {
+    val src = getStringValue(node, "src", "")
+    val exoPlayer = remember { ExoPlayer.Builder(context).build() }
+
+    val mediaItem = remember(src) {
+        MediaItem.fromUri(
+            if (src.startsWith("http")) {
+                Uri.parse(src)
+            } else {
+                Uri.parse("asset:///sound/$src")
+            }
+        )
+    }
+
+    LaunchedEffect(mediaItem) {
+        if (!src.startsWith("http")) {
+            val dataSourceFactory = DataSource.Factory {
+                AssetDataSource(context)
+            }
+            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(mediaItem)
+            exoPlayer.setMediaSource(mediaSource)
+        } else {
+            exoPlayer.setMediaItem(mediaItem)
+        }
+        exoPlayer.prepare()
+    }
+
+    exoPlayer.playWhenReady = true
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
 }
 
 @Composable

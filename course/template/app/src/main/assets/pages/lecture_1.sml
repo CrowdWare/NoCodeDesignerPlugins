@@ -4,7 +4,6 @@ Page {
     Column {
         padding: "8"
 
-        //Markdown { text: "part:lecture_1" }
         Youtube { id: "BbiQSsZxlaU" }
     }
 }
