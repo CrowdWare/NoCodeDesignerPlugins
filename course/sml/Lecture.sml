@@ -16,4 +16,11 @@ ElementDefinition {
         default: ""
         description: "The filename of the lecture. Example: lecture_1.sml"
     }
+
+    Property {
+        name: "duration"
+        type: "Int"
+        default: ""
+        description: "The durartion of the lecturein minutes."
+    }
 }

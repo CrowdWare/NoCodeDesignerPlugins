@@ -34,7 +34,7 @@ interface NoCodePlugin {
     val icon: String?           // Optional: "epub.svg", als Pfad oder Ressource
 }
 
-interface ExportPlugin {
+interface ExportPlugin : NoCodePlugin {
     suspend fun export(
         source: String,
         outputDir: File,
@@ -42,12 +42,21 @@ interface ExportPlugin {
     ): ExportStatus
 }
 
-interface AppEditorPlugin {
+interface AppEditorPlugin : NoCodePlugin {
     @Composable
     fun editor(
         source: File,
         node: SmlNode,
         onChange: (SmlNode) -> Unit,
         accentColor: Color
+    )
+}
+
+interface CreatePlugin : NoCodePlugin {
+    fun create(
+        name: String, 
+        appId: String, 
+        outputDir: String, 
+        theme: String
     )
 }

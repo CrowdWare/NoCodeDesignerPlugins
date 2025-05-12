@@ -68,6 +68,7 @@ import androidx.media3.datasource.AssetDataSource
 import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.ui.PlayerView
 import at.crowdware.coursereader.SmlNode
 import at.crowdware.coursereader.Theme
 import at.crowdware.coursereader.getBoolValue
@@ -144,6 +145,9 @@ fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
         }
         "Youtube" -> {
             renderYoutube(theme, node)
+        }
+        "Video" -> {
+            renderVideo(context, node)
         }
         "Spacer" -> {
             renderSpacer(node)
@@ -269,6 +273,46 @@ fun renderYoutube(theme: Theme, node: SmlNode) {
                 })
             }
         }
+    )
+}
+
+@Composable
+fun renderVideo(context: Context, node: SmlNode) {
+    val src = getStringValue(node, "src", "")
+    val mediaItem = remember(src) {
+        MediaItem.fromUri(
+            if (src.startsWith("http")) {
+                Uri.parse(src)
+            } else {
+                Uri.parse("asset:///videos/$src")
+            }
+        )
+    }
+
+    val exoPlayer = remember(context, mediaItem) {
+        ExoPlayer.Builder(context)
+            .build()
+            .apply {
+                setMediaItem(mediaItem)
+                prepare()
+                playWhenReady = false
+            }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
+
+    AndroidView(
+        factory = {
+            PlayerView(it).apply {
+                player = exoPlayer
+                useController = true
+            }
+        },
+        modifier = Modifier
     )
 }
 
