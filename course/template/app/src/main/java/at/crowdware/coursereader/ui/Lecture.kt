@@ -289,7 +289,7 @@ fun renderSound(context: Context, node: SmlNode) {
             if (src.startsWith("http")) {
                 Uri.parse(src)
             } else {
-                Uri.parse("asset:///sound/$src")
+                Uri.parse("asset:///sounds/$src")
             }
         )
     }
