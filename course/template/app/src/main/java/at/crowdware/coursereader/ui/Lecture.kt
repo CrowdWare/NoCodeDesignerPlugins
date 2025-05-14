@@ -19,6 +19,7 @@
 
 package at.crowdware.coursereader.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -27,6 +28,7 @@ import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -39,16 +41,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -69,6 +81,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import at.crowdware.coursereader.PropertyValue
 import at.crowdware.coursereader.SmlNode
 import at.crowdware.coursereader.Theme
 import at.crowdware.coursereader.getBoolValue
@@ -76,16 +89,23 @@ import at.crowdware.coursereader.getIntValue
 import at.crowdware.coursereader.getPadding
 import at.crowdware.coursereader.getStringValue
 import at.crowdware.coursereader.parseSML
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
-import java.io.File
+import kotlinx.coroutines.delay
 import java.io.IOException
 
 
 @Composable
 fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(scrollState.maxValue, scrollState.value) {
+        if (scrollState.value >= scrollState.maxValue) {
+            println("Scrolled down")
+        }
+    }
 
     var content: String? = null
     try {
@@ -109,7 +129,6 @@ fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
                         end = padding.right.dp
                     )
             ) {
-
                 for (element in parsedPage.children) {
                     renderElement(context, theme, element, lang)
                 }
@@ -126,7 +145,7 @@ fun ShowLecture(context: Context, theme: Theme, page: String, lang: String) {
 }
 
 @Composable
-fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
+fun ColumnScope.renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
     when (node.name) {
         "Column" -> {
             renderColumn(context, theme, node, lang)
@@ -153,7 +172,7 @@ fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
             renderSpacer(node)
         }
         "Sound" -> {
-            renderSound(context, node)
+            renderSound(context, theme, node)
         }
         else -> {
             println("unhandled element: ${node.name}")
@@ -162,9 +181,65 @@ fun renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
 }
 
 @Composable
-fun renderColumn(context: Context, theme: Theme, node: SmlNode, lang: String) {
+fun RowScope.renderElement(context: Context, theme: Theme, node: SmlNode, lang: String) {
+    when (node.name) {
+        "Column" -> {
+            renderColumn(context, theme, node, lang)
+        }
+        "Row" -> {
+            renderRow(context, theme, node, lang)
+        }
+        "Markdown" -> {
+            renderMarkdown(context, modifier = Modifier, theme, node, lang)
+        }
+        "Text" -> {
+            renderText(modifier = Modifier, theme, node)
+        }
+        "Image" -> {
+            renderImage(context, theme, node)
+        }
+        "Youtube" -> {
+            renderYoutube(theme, node)
+        }
+        "Video" -> {
+            renderVideo(context, node)
+        }
+        "Spacer" -> {
+            renderSpacer(node)
+        }
+        "Sound" -> {
+            renderSound(context, theme, node)
+        }
+        else -> {
+            println("unhandled element: ${node.name}")
+        }
+    }
+}
+
+@Composable
+fun ColumnScope.renderColumn(context: Context, theme: Theme, node: SmlNode, lang: String) {
+    val scrollState = rememberScrollState()
     val padding = getPadding(node)
-    Column(modifier = Modifier.padding(top = padding.top.dp, bottom = padding.bottom.dp, start = padding.left.dp, end = padding.right.dp)) {
+    val weight = getIntValue(node, "weight", 0)
+    val scrollable = getBoolValue(node, "scrollable", false)
+    var modifier = if (scrollable) Modifier.verticalScroll(scrollState) else Modifier
+    modifier = if (weight > 0) modifier.weight(weight.toFloat()) else modifier
+    Column(modifier = modifier.padding(top = padding.top.dp, bottom = padding.bottom.dp, start = padding.left.dp, end = padding.right.dp)) {
+        for (n in node.children) {
+            renderElement(context, theme, n, lang)
+        }
+    }
+}
+
+@Composable
+fun RowScope.renderColumn(context: Context, theme: Theme, node: SmlNode, lang: String) {
+    val scrollState = rememberScrollState()
+    val padding = getPadding(node)
+    val weight = getIntValue(node, "weight", 0)
+    val scrollable = getBoolValue(node, "scrollable", false)
+    var modifier = if (scrollable) Modifier.verticalScroll(scrollState) else Modifier
+    modifier = if (weight > 0) modifier.weight(weight.toFloat()) else modifier
+    Column(modifier = modifier.padding(top = padding.top.dp, bottom = padding.bottom.dp, start = padding.left.dp, end = padding.right.dp)) {
         for (n in node.children) {
             renderElement(context, theme, n, lang)
         }
@@ -251,6 +326,7 @@ fun renderYoutube(theme: Theme, node: SmlNode) {
     val height = getIntValue(node, "height", 0)
     val videoId = getStringValue(node, "id", "")
 
+    val context = LocalContext.current
     val modifier = if (height > 0) Modifier.height(height.dp) else Modifier.fillMaxSize()
     val heightPx = if (height > 0) {
         with(LocalDensity.current) { height.dp.toPx().toInt() }
@@ -258,22 +334,36 @@ fun renderYoutube(theme: Theme, node: SmlNode) {
         ViewGroup.LayoutParams.MATCH_PARENT
     }
 
+    val youTubePlayerView = remember {
+        YouTubePlayerView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                heightPx
+            )
+            addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                override fun onReady(youTubePlayer: YouTubePlayer) {
+                    youTubePlayer.loadVideo(videoId, 0f)
+                }
+                override fun onStateChange(youTubePlayer: YouTubePlayer, state: PlayerConstants.PlayerState) {
+                    if (state == PlayerConstants.PlayerState.ENDED) {
+                        println("Video zum Ende gespielt")
+                    }
+                }
+            })
+        }
+    }
+
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            YouTubePlayerView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    heightPx
-                )
-                addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
-                    override fun onReady(youTubePlayer: YouTubePlayer) {
-                        youTubePlayer.loadVideo(videoId, 0f)
-                    }
-                })
-            }
-        }
+        factory = { youTubePlayerView }
     )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            // Wichtig: Spieler korrekt freigeben
+            youTubePlayerView.release()
+        }
+    }
 }
 
 @Composable
@@ -322,11 +412,15 @@ fun renderSpacer(node: SmlNode) {
     Spacer(modifier = Modifier.width(amount.dp).height(amount.dp))
 }
 
+
+@SuppressLint("RememberReturnType")
 @OptIn(UnstableApi::class)
 @Composable
-fun renderSound(context: Context, node: SmlNode) {
+fun renderSound(context: Context, theme: Theme, node: SmlNode) {
     val src = getStringValue(node, "src", "")
     val exoPlayer = remember { ExoPlayer.Builder(context).build() }
+
+    val isPlaying = remember { mutableStateOf(false) }
 
     val mediaItem = remember(src) {
         MediaItem.fromUri(
@@ -352,12 +446,57 @@ fun renderSound(context: Context, node: SmlNode) {
         exoPlayer.prepare()
     }
 
-    exoPlayer.playWhenReady = true
+    LaunchedEffect(isPlaying.value) {
+        exoPlayer.playWhenReady = isPlaying.value
+    }
 
     DisposableEffect(Unit) {
         onDispose {
             exoPlayer.release()
         }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = {
+            isPlaying.value = !isPlaying.value
+        }) {
+            Icon(
+                imageVector = if (isPlaying.value) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying.value) "Pause" else "Play",
+                tint = hexToColor(theme, theme.onPrimary)
+            )
+        }
+
+        IconButton(onClick = {
+            exoPlayer.seekTo(0)
+        }) {
+            Icon(
+                Icons.Default.Replay,
+                contentDescription = "Replay",
+                tint = hexToColor(theme, theme.onPrimary))
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        val currentPosition = remember { mutableStateOf(0L) }
+        val duration = remember { mutableStateOf(1L) }
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                currentPosition.value = exoPlayer.currentPosition
+                duration.value = exoPlayer.duration.takeIf { it > 0 } ?: 1
+                delay(500)
+            }
+        }
+
+        LinearProgressIndicator(
+            progress = currentPosition.value / duration.value.toFloat(),
+            modifier = Modifier
+                .weight(1f)
+                .height(4.dp)
+        )
     }
 }
 

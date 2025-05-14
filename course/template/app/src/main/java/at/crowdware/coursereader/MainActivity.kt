@@ -68,11 +68,8 @@ import androidx.compose.material.icons.filled.Menu
 
 
 // TODO
-// Sound
 // Fortschrittsbalken
 // Ankreuzen für erledigt
-// Video Minuten anzeigen
-// Zeit für Lektion Vorschau
 
 class MainActivity : ComponentActivity() {
 
@@ -86,12 +83,6 @@ class MainActivity : ComponentActivity() {
                     val context = this
                     var page by remember { mutableStateOf("home.sml") }
                     var showAccordion by remember { mutableStateOf(false) }
-                    val fileContent = remember {
-                        context.assets.open("app.sml").bufferedReader().use { it.readText() }
-                    }
-                    val (_, _) = remember(fileContent) {
-                        parseSML(fileContent)
-                    }
                     val parsedData by remember {
                         mutableStateOf(loadAndParseSml(context))
                     }

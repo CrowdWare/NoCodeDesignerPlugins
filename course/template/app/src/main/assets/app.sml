@@ -17,11 +17,13 @@ App {
             Lecture {
                 label: "Lecture 1"
                 src: "lecture_1.sml"
+                duration: 20
             }
 
             Lecture {
                 label: "Lecture 2"
                 src: "lecture_2.sml"
+                duration: 13
             }
         }
 
@@ -31,11 +33,13 @@ App {
             Lecture {
                 label: "Lecture 3"
                 src: "lecture_3.sml"
+                duration: 34
             }
 
             Lecture {
                 label: "Lecture 4"
                 src: "lecture_4.sml"
+                duration: 11
             }
         }
 
@@ -45,6 +49,7 @@ App {
             Lecture {
                 label: "Lecture 3"
                 src: "lecture_3.sml"
+                duration: 10
             }
 
             Lecture {

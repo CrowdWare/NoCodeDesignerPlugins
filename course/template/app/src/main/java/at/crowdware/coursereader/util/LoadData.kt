@@ -22,6 +22,7 @@ package at.crowdware.coursereader.util
 
 import android.content.Context
 import at.crowdware.coursereader.Theme
+import at.crowdware.coursereader.getIntValue
 import at.crowdware.coursereader.getStringValue
 import at.crowdware.coursereader.parseSML
 import at.crowdware.coursereader.ui.AccordionEntry
@@ -84,7 +85,8 @@ fun loadAndParseSml(context: Context): ParsedCourse {
                             val entries = topic.children.map { lecture ->
                                 Lecture(
                                     label = getStringValue(lecture, "label", ""),
-                                    page = getStringValue(lecture, "src", "")
+                                    page = getStringValue(lecture, "src", ""),
+                                    duration = getIntValue(lecture, "duration", 0)
                                 )
                             }
                             topicList.add(

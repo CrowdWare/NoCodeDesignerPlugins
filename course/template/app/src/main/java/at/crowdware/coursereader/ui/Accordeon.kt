@@ -38,10 +38,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import at.crowdware.coursereader.Theme
 
-data class Lecture(val label: String, val page: String)
+data class Lecture(val label: String, val page: String, val duration: Int)
 data class AccordionEntry(val title: String, val content: List<Lecture>)
 
 @Composable
@@ -94,6 +95,12 @@ fun AccordionItem(theme: Theme, entry: AccordionEntry, onClick: (String) -> Unit
                             style = MaterialTheme.typography.labelMedium,
                             color = hexToColor(theme, theme.onPrimary)
                         )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = item.duration.toString() + " min",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = hexToColor(theme, theme.onPrimary),
+                            textAlign = TextAlign.End)
                     }
                 }
             }
