@@ -61,7 +61,7 @@ class CoursePlugin : NoCodePlugin, ExportPlugin, CreatePlugin {
 
                             Lecture {
                                 label: "Lecture 2"
-                                src: "lecture_1.sml"
+                                src: "lecture_2.sml"
                             }
                         }
                     }
@@ -183,12 +183,12 @@ class CoursePlugin : NoCodePlugin, ExportPlugin, CreatePlugin {
 fun writeDarkTheme(): String {
     var content = "\n"
     content += "\tTheme {\n"
-    content += "\t\tprimary: \"#FFB951\"\n"
-    content += "\t\tonPrimary: \"#452B00\"\n"
+    content += "\t\tprimary: \"#FF353739\"\n" 
+    content += "\t\tonPrimary: \"#FFB0B0B0\"\n"   
     content += "\t\tprimaryContainer: \"#633F00\"\n"
     content += "\t\tonPrimaryContainer: \"#FFDDB3\"\n"
-    content += "\t\tsecondary: \"#DDC2A1\"\n"
-    content += "\t\tonSecondary: \"#3E2D16\"\n"
+    content += "\t\tsecondary: \"#FF03DAC5\"\n"
+    content += "\t\tonSecondary: \"#FFFFFFFF\"\n"
     content += "\t\tsecondaryContainer: \"#56442A\"\n"
     content += "\t\tonSecondaryContainer: \"#FBDEBC\"\n"
     content += "\t\ttertiary: \"#B8CEA1\"\n"
@@ -199,10 +199,10 @@ fun writeDarkTheme(): String {
     content += "\t\terrorContainer: \"#93000A\"\n"
     content += "\t\tonError: \"#690005\"\n"
     content += "\t\tonErrorContainer: \"#FFDAD6\"\n"
-    content += "\t\tbackground: \"#1F1B16\"\n"
+    content += "\t\tbackground: \"#FF121212\"\n"
     content += "\t\tonBackground: \"#EAE1D9\"\n"
-    content += "\t\tsurface: \"#1F1B16\"\n"
-    content += "\t\tonSurface: \"#EAE1D9\"\n"
+    content += "\t\tsurface: \"#FF1F1F1F\"\n"
+    content += "\t\tonSurface: \"#FFFFFFFF\"\n"
     content += "\t\tsurfaceVariant: \"#4F4539\"\n"
     content += "\t\tonSurfaceVariant: \"#D3C4B4\"\n"
     content += "\t\toutline: \"#9C8F80\"\n"
@@ -328,7 +328,7 @@ fun reverseUrl(url: String): String {
 
 fun changeAppId(id: String, name: String, outputFolder: File, lang: String) {
     val build = File(outputFolder, "app/build.gradle.kts")
-    exchangePlaceholders(build , "applicationId = \"at.crowdware.coursereader\"", "applicationId = \"" + id + lang + "\"")
+    exchangePlaceholders(build , "applicationId = \"at.crowdware.coursereader\"", "applicationId = \"" + id + "." + lang + "\"")
 
     val manifest = File(outputFolder, "app/src/main/AndroidManifest.xml")
     exchangePlaceholders(manifest , "android:label=\"CourseReader\"", "android:label=\"" + name + "\"")

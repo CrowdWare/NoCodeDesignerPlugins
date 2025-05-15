@@ -34,7 +34,7 @@ android {
                 "!*~"
             )
         }
-        applicationId = "at.crowdware.coursekreader"
+        applicationId = "at.crowdware.coursereader"
         minSdk = 29
         targetSdk = 35
         versionCode = 1

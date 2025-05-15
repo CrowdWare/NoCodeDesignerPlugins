@@ -9,6 +9,16 @@ ZIP_NAME="${PLUGIN_ID}.zip"
 echo "▶️  Bauen des Plugins..."
 ./gradlew clean pluginJar
 
+echo "🧹 Lösche temporäre Dateien in template/..."
+rm -rf template/.gradle
+rm -rf template/.idea
+rm -rf template/.kotlin
+rm -rf template/build
+rm -rf template/app/build
+rm -rf template/app/.cxx
+rm -rf template/app/.gradle
+rm -rf template/app/.idea
+
 echo "📦 Erstelle ${ZIP_NAME}..."
 
 rm -f $ZIP_NAME
